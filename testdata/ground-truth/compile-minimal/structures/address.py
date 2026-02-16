@@ -8,6 +8,6 @@ from typing import Optional
 class Address(BaseModel):
     """Address data transfer object."""
     city: str
-    street: str
     house_nr: str
+    street: str
     zip_code: str

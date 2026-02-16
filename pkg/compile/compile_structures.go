@@ -2,6 +2,7 @@ package compile
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/kalo-build/morphe-go/pkg/registry"
@@ -18,8 +19,16 @@ func CompileStructure(structure yaml.Structure, r *registry.Registry) (*formatde
 		Fields: make([]formatdef.Field, 0),
 	}
 
+	// Sort field names for deterministic output
+	fieldNames := make([]string, 0, len(structure.Fields))
+	for fieldName := range structure.Fields {
+		fieldNames = append(fieldNames, fieldName)
+	}
+	sort.Strings(fieldNames)
+
 	// Add fields from the structure definition
-	for fieldName, field := range structure.Fields {
+	for _, fieldName := range fieldNames {
+		field := structure.Fields[fieldName]
 		// Map field type to format type
 		fieldType, err := typemap.MorpheStructureFieldToFormatType(field.Type, fieldName, r)
 		if err != nil {

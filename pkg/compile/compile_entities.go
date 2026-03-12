@@ -12,6 +12,15 @@ import (
 	"github.com/kalo-build/plugin-morphe-py-types/pkg/typemap"
 )
 
+func hasAttribute(attributes []string, attr string) bool {
+	for _, a := range attributes {
+		if a == attr {
+			return true
+		}
+	}
+	return false
+}
+
 // CompileEntity converts a Morphe entity to the target format
 func CompileEntity(entity yaml.Entity, r *registry.Registry) (*formatdef.Struct, error) {
 	// Create the struct definition
@@ -36,8 +45,9 @@ func CompileEntity(entity yaml.Entity, r *registry.Registry) (*formatdef.Struct,
 		}
 
 		formatField := formatdef.Field{
-			Name: fieldName,
-			Type: fieldType,
+			Name:       fieldName,
+			Type:       fieldType,
+			IsOptional: hasAttribute(field.Attributes, "optional"),
 		}
 		formatStruct.Fields = append(formatStruct.Fields, formatField)
 	}
@@ -57,15 +67,18 @@ func CompileEntity(entity yaml.Entity, r *registry.Registry) (*formatdef.Struct,
 			// Handle polymorphic relationships
 			if yamlops.IsRelationPoly(relationType) && yamlops.IsRelationFor(relationType) && yamlops.IsRelationOne(relationType) {
 				// ForOnePoly: Add type and id fields
+				relOptional := hasAttribute(relation.Attributes, "optional")
 				typeField := formatdef.Field{
-					Name: formatdef.ToSnakeCase(relatedName + "_type"),
-					Type: formatdef.TypeString,
+					Name:       formatdef.ToSnakeCase(relatedName + "_type"),
+					Type:       formatdef.TypeString,
+					IsOptional: relOptional,
 				}
 				formatStruct.Fields = append(formatStruct.Fields, typeField)
 
 				idField := formatdef.Field{
-					Name: formatdef.ToSnakeCase(relatedName + "_id"),
-					Type: formatdef.TypeString,
+					Name:       formatdef.ToSnakeCase(relatedName + "_id"),
+					Type:       formatdef.TypeString,
+					IsOptional: relOptional,
 				}
 				formatStruct.Fields = append(formatStruct.Fields, idField)
 			} else if yamlops.IsRelationPoly(relationType) {
@@ -75,8 +88,9 @@ func CompileEntity(entity yaml.Entity, r *registry.Registry) (*formatdef.Struct,
 			} else if yamlops.IsRelationFor(relationType) && yamlops.IsRelationOne(relationType) {
 				// Regular ForOne: Add foreign key field
 				fkField := formatdef.Field{
-					Name: formatdef.ToSnakeCase(relatedName + "_id"),
-					Type: formatdef.TypeString,
+					Name:       formatdef.ToSnakeCase(relatedName + "_id"),
+					Type:       formatdef.TypeString,
+					IsOptional: hasAttribute(relation.Attributes, "optional"),
 				}
 				formatStruct.Fields = append(formatStruct.Fields, fkField)
 			}
@@ -123,8 +137,9 @@ func CompileEntity(entity yaml.Entity, r *registry.Registry) (*formatdef.Struct,
 			}
 
 			navField := formatdef.Field{
-				Name: navFieldName,
-				Type: navType,
+				Name:       navFieldName,
+				Type:       navType,
+				IsOptional: hasAttribute(relation.Attributes, "optional"),
 			}
 			formatStruct.Fields = append(formatStruct.Fields, navField)
 		}
@@ -338,8 +353,8 @@ func generateEntityContent(entity *formatdef.Struct, morpheEntity yaml.Entity, c
 			} else if strings.HasPrefix(fieldType, "Optional[") || strings.HasPrefix(fieldType, "List[") || strings.Contains(fieldType, "Union[") {
 				// Relationship fields or Union types
 				cb.Line("%s: %s = None", fieldName, fieldType)
-			} else if strings.HasSuffix(fieldName, "_id") || strings.HasSuffix(fieldName, "_type") {
-				// Foreign keys and type fields are optional
+			} else if field.IsOptional || strings.HasSuffix(fieldName, "_id") || strings.HasSuffix(fieldName, "_type") {
+				// Optional attribute, foreign keys, or type fields
 				cb.Line("%s: Optional[%s] = None", fieldName, fieldType)
 			} else {
 				cb.Line("%s: %s", fieldName, fieldType)

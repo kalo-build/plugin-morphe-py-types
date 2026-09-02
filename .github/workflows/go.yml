@@ -19,3 +19,17 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: go.sum
       - run: go test ./...
+      - name: Build and validate WASI artifact
+        run: |
+          mkdir -p dist
+          GOOS=wasip1 GOARCH=wasm go build -trimpath -o dist/plugin.wasm ./cmd/plugin
+          node -e 'const fs=require("fs"); const module=new WebAssembly.Module(fs.readFileSync("dist/plugin.wasm")); if (!WebAssembly.Module.exports(module).some((entry) => entry.name === "_start")) process.exit(1);'
+      - name: Upload WASI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-morphe-py-types-${{ github.sha }}
+          path: |
+            dist/plugin.wasm
+            plugin.yaml
+          if-no-files-found: error
+          retention-days: 30

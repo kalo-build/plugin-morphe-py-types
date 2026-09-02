@@ -1,0 +1,48 @@
+name: "@kalo-build/plugin-morphe-py-types"
+displayName: "Morphe Python Types"
+description: "Generates typed Python and Pydantic models from Morphe model definitions."
+version: "1.0.0"
+
+input:
+  format: "KA:MO1:YAML1"
+  description: "Morphe YAML schema files"
+  suggestedStore:
+    name: "KA_MO_YAML"
+    type: "localFileSystem"
+    path: "./morphe"
+
+output:
+  format: "KA:MO1:PY1"
+  description: "Python type and Pydantic model files"
+  suggestedStore:
+    name: "KA_MO_PY"
+    type: "localFileSystem"
+    path: "./python"
+
+configSchema:
+  pythonVersion:
+    type: string
+    description: "Target Python version."
+    default: "3.11"
+  usePydantic:
+    type: boolean
+    description: "Generate Pydantic models."
+    default: true
+  pydanticV2:
+    type: boolean
+    description: "Use Pydantic v2 APIs."
+    default: true
+  addTypeHints:
+    type: boolean
+    description: "Emit Python type hints."
+    default: true
+  generateInit:
+    type: boolean
+    description: "Generate package __init__.py files."
+    default: true
+  indentSize:
+    type: integer
+    description: "Spaces per indentation level."
+    default: 4
+    minimum: 1
+    maximum: 8
